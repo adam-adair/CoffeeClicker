@@ -5,11 +5,13 @@
  **************/
 
 function updateCoffeeView(coffeeQty) {
-  // your code here
+  document.getElementById('coffee_counter').innerText = coffeeQty
 }
 
 function clickCoffee(data) {
-  // your code here
+  data.coffee += data.clickValue ? data.clickValue : 1
+  updateCoffeeView(data.coffee)
+  renderProducers(data)
 }
 
 /**************
@@ -17,32 +19,43 @@ function clickCoffee(data) {
  **************/
 
 function unlockProducers(producers, coffeeCount) {
-  // your code here
+  for(let prod of producers) {
+    if(!prod.unlocked && coffeeCount >= prod.price/2) {prod.unlocked = true}
+  }
 }
 
 function getUnlockedProducers(data) {
-  // your code here
+  return data.producers.filter(prod => prod.unlocked)
 }
 
 function makeDisplayNameFromId(id) {
-  // your code here
+  return id.split('_').map(word => word[0].toUpperCase() + word.slice(1)).join(' ')
 }
 
 // You shouldn't need to edit this function-- its tests should pass once you've written makeDisplayNameFromId
-function makeProducerDiv(producer) {
+function makeProducerDiv(producer, coffee) {
   const containerDiv = document.createElement('div');
   containerDiv.className = 'producer';
   const displayName = makeDisplayNameFromId(producer.id);
   const currentCost = producer.price;
+  let buyable
+  if (coffee) {
+    buyable = coffee >= currentCost ? '' : 'disabled'
+  } else {
+    buyable = ''
+  }
+  const sellable = producer.qty > 0 ? '' : 'hidden'
   const html = `
   <div class="producer-column">
     <div class="producer-title">${displayName}</div>
-    <button type="button" id="buy_${producer.id}">Buy</button>
+    <button type="button" ${buyable} id="buy_${producer.id}">Buy</button>
+    <button type="button" ${sellable} id="sell_${producer.id}">Sell</button>
   </div>
   <div class="producer-column">
     <div>Quantity: ${producer.qty}</div>
     <div>Coffee/second: ${producer.cps}</div>
     <div>Cost: ${currentCost} coffee</div>
+    <div ${sellable}>Sale Price: ${Math.ceil(currentCost/2)} coffee</div>
   </div>
   `;
   containerDiv.innerHTML = html;
@@ -50,11 +63,29 @@ function makeProducerDiv(producer) {
 }
 
 function deleteAllChildNodes(parent) {
-  // your code here
+  [...parent.childNodes].map(child => parent.removeChild(child))
 }
 
 function renderProducers(data) {
-  // your code here
+  let producerContainer = document.getElementById('producer_container')
+  deleteAllChildNodes(producerContainer)
+  unlockProducers(data.producers, data.coffee)
+  let unlockedProducers = getUnlockedProducers(data)
+  unlockedProducers.map(prod => producerContainer.appendChild(makeProducerDiv(prod, data.coffee)))
+  let upgradeContainer = document.getElementById('upgrade-container')
+
+  if(upgradeContainer !== null) {
+    if(data.clickValue === 1 && data.coffee >= 100) {
+     upgradeContainer.style.backgroundColor = 'white'
+    } else {
+      upgradeContainer.style.backgroundColor = 'grey'
+    }
+    if(data.clickValue === 2) {
+      document.querySelector('#upgrade-container > span:nth-child(2)').innerText = '✅'
+    } else {
+      document.querySelector('#upgrade-container > span:nth-child(2)').innerText = '(100c)'
+    }
+  }
 }
 
 /**************
@@ -62,33 +93,87 @@ function renderProducers(data) {
  **************/
 
 function getProducerById(data, producerId) {
-  // your code here
+  return data.producers.filter(prod => prod.id === producerId)[0]
 }
 
 function canAffordProducer(data, producerId) {
-  // your code here
+  return data.coffee >= getProducerById(data, producerId).price
 }
 
 function updateCPSView(cps) {
-  // your code here
+  document.getElementById('cps').innerText = cps
 }
 
 function updatePrice(oldPrice) {
-  // your code here
+  return Math.floor(oldPrice * 1.25)
 }
 
 function attemptToBuyProducer(data, producerId) {
-  // your code here
+  if (canAffordProducer(data, producerId)) {
+    let boughtProducer = getProducerById(data, producerId);
+    boughtProducer.qty++
+    data.coffee -= boughtProducer.price
+    boughtProducer.price = updatePrice(boughtProducer.price)
+    data.totalCPS += boughtProducer.cps
+    //updateCPSView(data.totalCPS)
+    return true
+  } else {
+    return false
+  }
 }
 
 function buyButtonClick(event, data) {
-  // your code here
+  let clickedProducer = event.target
+  if (clickedProducer.tagName === 'BUTTON') {
+    if (attemptToBuyProducer(data, clickedProducer.id.replace('buy_',''))) {
+      renderProducers(data)
+      updateCoffeeView(data.coffee)
+      updateCPSView(data.totalCPS)
+    } else {
+      window.alert('Not enough coffee!')
+    }
+  }
+}
+
+function sellButtonClick(event, data) {
+  let clickedProducer = event.target
+  if (clickedProducer.tagName === 'BUTTON') {
+    let soldProducer = getProducerById(data, clickedProducer.id.replace('sell_',''));
+    soldProducer.qty--
+    data.totalCPS -= soldProducer.cps
+    data.coffee += Math.ceil(soldProducer.price/2)
+    renderProducers(data)
+    updateCoffeeView(data.coffee)
+    updateCPSView(data.totalCPS)
+  }
 }
 
 function tick(data) {
-  // your code here
+  data.coffee += data.totalCPS
+  renderProducers(data)
+  updateCoffeeView(data.coffee)
 }
 
+function save(data) {
+  localStorage.setItem('data', JSON.stringify(data));
+}
+
+function resetGame(data, source) {
+  data.load(source)
+  renderProducers(data)
+  updateCoffeeView(data.coffee)
+  updateCPSView(data.totalCPS)
+}
+
+function upgradeClicks(data) {
+  if(data.coffee >= 100 && data.clickValue !== 2) {
+    data.coffee -= 100
+    data.clickValue = 2
+    renderProducers(data)
+    updateCoffeeView(data.coffee)
+    updateCPSView(data.totalCPS)
+  }
+}
 /*************************
  *  Start your engines!
  *************************/
@@ -106,7 +191,43 @@ function tick(data) {
 if (typeof process === 'undefined') {
   // Get starting data from the window object
   // (This comes from data.js)
-  const data = window.data;
+
+  // let data = window.data
+
+  //creates a data object from an input object; can change definitions in data.js
+  class Data {
+    constructor () {
+      this.coffee = 0
+      this.totalCPS = 0
+      this.clickValue = 1
+      this.producers = []
+    }
+    //loads values into data object
+    load(source) {
+      this.coffee = source.coffee
+      this.totalCPS = source.totalCPS
+      this.clickValue = source.clickValue ? source.clickValue : 1
+      this.producers = []
+      source.producers.map((prod, ix) => {
+        this.producers[ix] = {}
+        this.producers[ix].id = prod.id
+        this.producers[ix].price = prod.price
+        this.producers[ix].unlocked = prod.unlocked
+        this.producers[ix].qty = prod.qty
+        this.producers[ix].cps = prod.cps
+      })
+    }
+  }
+
+  // loads data from localstorage if it exists, otherwise uses window.data as template
+  const popData = localStorage.data ? JSON.parse(localStorage.data) : window.data
+  const data = new Data()
+  data.load(popData)
+
+  //draws whatever's been loaded for the first time
+  renderProducers(data)
+  updateCoffeeView(data.coffee)
+  updateCPSView(data.totalCPS)
 
   // Add an event listener to the giant coffee emoji
   const bigCoffee = document.getElementById('big_coffee');
@@ -116,11 +237,25 @@ if (typeof process === 'undefined') {
   // Pass in the browser event and our data object to the event listener
   const producerContainer = document.getElementById('producer_container');
   producerContainer.addEventListener('click', event => {
-    buyButtonClick(event, data);
+    if (event.target.id.slice(0,4) === 'buy_') {
+      buyButtonClick(event, data);
+    } else {
+      sellButtonClick(event, data);
+    }
   });
+
+  const reset = document.getElementById('reset');
+  reset.addEventListener('click', () => resetGame(data, window.data));
+
+  const upgrade = document.getElementById('upgrade-container');
+  upgrade.addEventListener('click', () => upgradeClicks(data));
 
   // Call the tick function passing in the data object once per second
   setInterval(() => tick(data), 1000);
+
+  // save the data to localstorage every 15 seconds
+  setInterval(() => save(data), 15000);
+
 }
 // Meanwhile, if we aren't in a browser and are instead in node
 // we'll need to exports the code written here so we can import and

@@ -3,6 +3,8 @@
 }
 body {
   margin: 0px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  background-color: Sienna;
 }
 .column-container {
   display: flex;
@@ -37,6 +39,10 @@ body {
   position: relative;
   background-color: white;
   top: 8px;
+  z-index: 2;
+  border: 1px solid gray;
+  border-radius: 4px;
+  padding: 5px;
 }
 #big_coffee {
   user-select: none;
@@ -58,6 +64,7 @@ body {
   overflow: auto;
   border: 2px black solid;
   border-radius: 5px;
+  background-color: SandyBrown;
 }
 
 .producer {
@@ -67,6 +74,7 @@ body {
   border-radius: 4px;
   display: flex;
   justify-content: space-between;
+  background-color: tan;
 }
 .producer-column {
   display: flex;
@@ -81,4 +89,31 @@ body {
 .producer button {
   font-size: 15px;
   width: 50px;
+}
+
+#reset {
+  margin: 8px;
+}
+
+#upgrade-container {
+  width: 50px;
+  height: 50px;
+  background-color: white;
+  z-index: 9;
+  position: absolute;
+  border: 2px solid black;
+  border-radius: 25px;
+  align-self: flex-end;
+  padding: 10px;
+  margin: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  background-color: grey;
+  color: black
+}
+
+#upgrade-container > span {
+  font-size: 10px;
 }
